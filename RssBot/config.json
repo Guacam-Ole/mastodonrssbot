@@ -1,36 +1,35 @@
 {
   "feeds": [
     {
-      "url":"https://",
-      "intervalMinutes":"15",
+      "url": "http://www.ndr.de/nachrichten/hamburg/index-rss.xml",
+      "intervalMinutes": "15",
       "bots": [
         {
-          "id":"News.Hamburg",
-          "urlfilter":"/nachrichten/hamburg",  
-          "typefilter":"Article",
-          "showimage":true,
-          "showtags":true,
-          "ignoretags":null
+          "id": "News.Hamburg",
+          "urlfilter": "/nachrichten/hamburg",
+          "typefilter": "Article",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": null
         },
         {
-          "id":"HamburgJournal",
-          "urlfilter":"/fernsehen/sendungen/hamburg_journal",  
-          "typefilter":"Article",
-          "showimage":true,
-          "showtags":true,
-          "ignoretags":"hamburg"
+          "id": "HamburgJournal",
+          "urlfilter": "/fernsehen/sendungen/hamburg_journal",
+          "typefilter": "Video",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": "hamburg"
         },
-        ,        {
-          "id":"Sendungen.hamburg",
-          "urlfilter":"/fernsehen/sendungen/", 
-          "urlexclude":"hamburg_journal",
-          "typefilter":null,
-          "showimage":true,
-          "showtags":true,
-          "ignoretags":"hamburg"
-        },
+        {
+          "id": "Sendungen.hamburg",
+          "urlfilter": "/fernsehen/sendungen/",
+          "urlexclude": "hamburg_journal",
+          "typefilter": "Video",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": "hamburg"
+        }
       ]
     }
-
   ]
 }
