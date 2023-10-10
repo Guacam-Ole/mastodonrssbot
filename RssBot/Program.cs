@@ -7,9 +7,11 @@ Console.WriteLine("Hello, World!");
 var services = new ServiceCollection();
 services.AddLogging();
 services.AddScoped<Rss>();
+services.AddScoped<Toot>();
+services.AddScoped<BotWork>();
 
-var provider=services.BuildServiceProvider();
-var rss=provider.GetRequiredService<Rss>(); 
+var provider = services.BuildServiceProvider();
+var botwork = provider.GetRequiredService<BotWork>();
+await botwork.RetrieveAndSendToots();
 
 
-await rss.ReadFeed(new FeedConfig { Url = "http://www.ndr.de/nachrichten/hamburg/index-rss.xml" });

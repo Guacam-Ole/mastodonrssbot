@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
+using RssBot.RssBot;
+
 namespace RssBot
 {
     public class Toot
@@ -27,17 +29,44 @@ namespace RssBot
             return attachment.Id;
         }
 
-        public async Task<Status?> SendToot(string botId, string content, string? replyTo, Stream? media)
+        public async Task<Status?> SendToot(BotConfig botConfig, RssItem rssItem)
+        {
+            var allTags = string.Empty;
+            if (botConfig.ShowTags)
+            {
+                var ignoreTags = new List<string>();
+                if (botConfig.IgnoreTags != null) ignoreTags = botConfig.IgnoreTags.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                allTags = string.Join(" ", rssItem.Tags.Where(q => !ignoreTags.Contains(q)).Select(q => "#" + q));
+            }
+
+            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n{rssItem.Url}\n\n{allTags}";
+            Stream? imageStream = null;
+            if (rssItem.ImageUrl != null)
+            {
+                imageStream = await DownloadImage(rssItem.ImageUrl);
+            }
+            return await SendToot(botConfig.Id, content, null, imageStream, rssItem.ImageDescription ?? "Vorschaubild");
+        }
+
+        private async Task<Stream?> DownloadImage(string url)
+        {
+            HttpClient client = new();
+            var response = await client.GetAsync(new Uri(url));
+            if (!response.IsSuccessStatusCode) return null; // Dont throw error if just image is missing
+            return await response.Content.ReadAsStreamAsync();
+        }
+
+        public async Task<Status?> SendToot(string botId, string content, string? replyTo, Stream? media, string altTag)
         {
             _logger.LogDebug("Sending Toot");
             var client = GetServiceClient(botId);
-            if (client==null)
+            if (client == null)
             {
                 _logger.LogWarning("Bot not found or disabled");
                 return null;
             }
             string? attachmentId = null;
-            if (media != null) attachmentId = await UploadMedia(client, media, "preview.png", "Vorschaubild zum Kanal");
+            if (media != null) attachmentId = await UploadMedia(client, media, "preview.png", altTag);
             if (attachmentId != null)
             {
                 return await client.PublishStatus(content, Visibility.Public, replyTo, mediaIds: new List<string> { attachmentId });

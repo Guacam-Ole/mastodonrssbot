@@ -2,6 +2,8 @@
 
 using Microsoft.Extensions.Logging;
 
+using Newtonsoft.Json;
+
 using RssBot.RssBot;
 
 namespace RssBot
@@ -9,51 +11,60 @@ namespace RssBot
     public class Rss
     {
         private readonly ILogger<Rss> _logger;
+        private Config _config;
 
         public Rss(ILogger<Rss> logger)
         {
             _logger = logger;
+            var config = File.ReadAllText("./config.json");
+            _config = JsonConvert.DeserializeObject<Config>(config) ?? throw new FileNotFoundException("cannot read config");
         }
 
-        public async Task<Dictionary<string, List<RssItem>>> ReadFeed(FeedConfig feedConfig)
+        public async Task<Dictionary<BotConfig, List<RssItem>>> ReadFeed()
         {
-            var unpublishedItems = new Dictionary<string, List<RssItem>>();
-            foreach (var botId in feedConfig.Bots.Select(q => q.Id))
+            var unpublishedItems = new Dictionary<BotConfig, List<RssItem>>();
+            foreach (var bots in _config.Feeds.Select(q => q.Bots))
             {
-                unpublishedItems.Add(botId, new List<RssItem>());
+                foreach (var bot in bots)
+                {
+                    unpublishedItems.Add(bot, new List<RssItem>());
+                }
             }
 
-            using (var db = new LiteDB.LiteDatabase("state.db"))
+            foreach (var feedConfig in _config.Feeds)
             {
-                var states = db.GetCollection<State>();
-                var match = states.FindById(feedConfig.Url);
-                match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddDays(-30) };
-
-                match.LastFeed = DateTime.Now.AddDays(-1);      // testing only
-
-                var feed = await FeedReader.ReadAsync(feedConfig.Url);
-                if (feed.Type != FeedType.Rss_1_0)
+                using (var db = new LiteDB.LiteDatabase("state.db"))
                 {
-                    _logger.LogError("Unexpected RSS-Type. Expecting 1.0, received '{type}'", feed.Type);
-                    return unpublishedItems;
-                }
+                    var states = db.GetCollection<State>();
+                    var match = states.FindById(feedConfig.Url);
+                    match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddHours(-10) };
 
-                if (feed.LastUpdatedDate < match.LastFeed)
-                {
-                    _logger.LogInformation("Nothing new on feed '{config}' since '{since}'", feedConfig, match.LastFeed);
-                    return unpublishedItems;
-                }
+                    match.LastFeed = DateTime.Now.AddHours(-10);      // testing only
 
-                foreach (var item in feed.Items.Where(q => q.PublishingDate > match.LastFeed))
-                {
-                    var x = item.SpecificItem.Element.Descendants().ToList();
-                    var rssItem = (item.ToRssItem());
-                    var bot = GetBotForRssItem(feedConfig, rssItem);
-                    if (bot == null) continue;
-                    unpublishedItems[bot.Id].Add(rssItem);
-                }
+                    var feed = await FeedReader.ReadAsync(feedConfig.Url);
+                    if (feed.Type != FeedType.Rss_1_0)
+                    {
+                        _logger.LogError("Unexpected RSS-Type. Expecting 1.0, received '{type}'", feed.Type);
+                        return unpublishedItems;
+                    }
 
-                states.Upsert(match);
+                    if (feed.LastUpdatedDate < match.LastFeed)
+                    {
+                        _logger.LogInformation("Nothing new on feed '{config}' since '{since}'", feedConfig, match.LastFeed);
+                        return unpublishedItems;
+                    }
+
+                    foreach (var item in feed.Items.Where(q => q.PublishingDate > match.LastFeed))
+                    {
+                        var x = item.SpecificItem.Element.Descendants().ToList();
+                        var rssItem = (item.ToRssItem());
+                        var bot = GetBotForRssItem(feedConfig, rssItem);
+                        if (bot == null) continue;
+                        unpublishedItems[bot].Add(rssItem);
+                    }
+
+                    states.Upsert(match);
+                }
             }
             return unpublishedItems;
         }
