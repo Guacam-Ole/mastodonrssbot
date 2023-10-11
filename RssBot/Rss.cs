@@ -68,7 +68,6 @@ namespace RssBot
                     {
                         try
                         {
-                            if (match.PostedItems.Any(q => q.Id == item.Id)) continue;
                             var x = item.SpecificItem.Element.Descendants().ToList();
                             var rssItem = (item.ToRssItem());
                             var bot = GetBotForRssItem(feedConfig, rssItem);
@@ -91,7 +90,7 @@ namespace RssBot
 
         private static bool UrlHasExcludes(string url, string? excludes)
         {
-            if (excludes == null) return false; 
+            if (excludes == null) return false;
             var excludeList = excludes.Split(" ");
             foreach (var exclude in excludeList)
             {

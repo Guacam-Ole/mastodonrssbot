@@ -1,5 +1,5 @@
 {
-  "privateonly": true,
+  "privateonly": false,
   "feeds": [
     {
       "url": "http://www.ndr.de/nachrichten/hamburg/index-rss.xml",
