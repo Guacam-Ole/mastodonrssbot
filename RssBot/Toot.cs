@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 
 using RssBot.RssBot;
 
-using System.Net.Mail;
 using System.Text.RegularExpressions;
 
 namespace RssBot
@@ -46,13 +45,7 @@ namespace RssBot
 
         public async Task<Status?> SendToot(BotConfig botConfig, RssItem rssItem)
         {
-            var allTags = string.Empty;
-            if (botConfig.ShowTags)
-            {
-                var ignoreTags = new List<string>();
-                if (botConfig.IgnoreTags != null) ignoreTags = botConfig.IgnoreTags.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-                allTags = GetTagString(botConfig, rssItem);
-            }
+            var allTags = botConfig.ShowTags ? GetTagString(botConfig, rssItem) : string.Empty;
 
             string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
             Stream? imageStream = null;

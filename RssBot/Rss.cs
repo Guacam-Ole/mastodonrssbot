@@ -37,7 +37,6 @@ namespace RssBot
                 {
                     var states = db.GetCollection<State>();
                     var match = states.FindById(feedConfig.Url);
-                    //match ??= new State { Id = feedConfig.Url, LastFeed = DateTime. Now.AddMinutes(-10) };
 
                     var feed = await FeedReader.ReadAsync(feedConfig.Url);
                     if (feed.Type != FeedType.Rss_1_0)
@@ -46,11 +45,11 @@ namespace RssBot
                         return unpublishedItems;
                     }
 
-                    //var newItems = feed.Items; //.Where(q => q.PublishingDate > lastFeed);
                     if (match == null)
                     {
+                        // first start, mark all as already sent
                         match = new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
-                        // firststart
+                        
                         foreach (var item in feed.Items)
                         {
                             match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });
