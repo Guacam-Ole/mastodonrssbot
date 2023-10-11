@@ -8,7 +8,7 @@
         {
           "id": "News.Hamburg",
           "urlfilter": "/nachrichten/hamburg",
-          "urlexclude": "podcast",
+          "urlexclude": "podcast topvideos",
           "typefilter": "Article",
           "showimage": true,
           "showtags": true,
@@ -18,7 +18,7 @@
         {
           "id": "Sport.Hamburg",
           "urlfilter": "/sport/",
-          "urlexclude": "podcast",
+          "urlexclude": "podcast topvideos",
           "showimage": true,
           "showtags": true,
           "ignoretags": null,
@@ -27,7 +27,7 @@
         {
           "id": "Hamburg.HamburgJournal",
           "urlfilter": "/fernsehen/sendungen/hamburg_journal",
-          "urlexclude": "podcast",
+          "urlexclude": "podcast topvideos",
           "typefilter": "Video",
           "showimage": true,
           "showtags": true,
@@ -36,7 +36,7 @@
         {
           "id": "Sendungen.hamburg",
           "urlfilter": "/fernsehen/sendungen/",
-          "urlexclude": "hamburg_journal",
+          "urlexclude": "hamburg_journal podcast topvideos",
           "typefilter": "Video",
           "showimage": true,
           "showtags": true,

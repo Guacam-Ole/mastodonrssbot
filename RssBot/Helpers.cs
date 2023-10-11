@@ -12,7 +12,6 @@ namespace RssBot
         {
             var bestImage = GetBestImage(feedItem.SpecificItem.Element);
             var tags = GetTags(feedItem.SpecificItem.Element);
-            var id = feedItem.Id;
 
             return new RssItem
             {

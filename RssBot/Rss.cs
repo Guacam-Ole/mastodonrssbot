@@ -39,9 +39,6 @@ namespace RssBot
                     var match = states.FindById(feedConfig.Url);
                     //match ??= new State { Id = feedConfig.Url, LastFeed = DateTime. Now.AddMinutes(-10) };
 
-
-
-
                     var feed = await FeedReader.ReadAsync(feedConfig.Url);
                     if (feed.Type != FeedType.Rss_1_0)
                     {
@@ -49,22 +46,24 @@ namespace RssBot
                         return unpublishedItems;
                     }
 
-          
-                    var newItems = feed.Items; //.Where(q => q.PublishingDate > lastFeed);
-                    if (match==null)
+                    //var newItems = feed.Items; //.Where(q => q.PublishingDate > lastFeed);
+                    if (match == null)
                     {
-                        match= new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
+                        match = new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
                         // firststart
-                        foreach (var item in newItems)
+                        foreach (var item in feed.Items)
                         {
-                            match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });    
+                            match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });
                         }
-                    } else
+                    }
+                    else
                     {
                         // cleanup old stuff
                         match.PostedItems.RemoveAll(q => q.ReadDate < DateTime.Now.AddDays(-120));
                     }
-                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'" , newItems.Count(),  match.LastFeed);
+                    var newItems = feed.Items.Where(q => !match.PostedItems.Any(m => m.Id == q.Id));
+
+                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'", newItems.Count(), match.LastFeed);
                     foreach (var item in newItems)
                     {
                         try
@@ -76,11 +75,10 @@ namespace RssBot
                             match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });
                             if (bot == null) continue;
                             unpublishedItems[bot].Add(rssItem);
-
                         }
-                        catch (Exception ex) 
+                        catch (Exception ex)
                         {
-                            _logger.LogError( ex, "Cannot toot item {item}", item);
+                            _logger.LogError(ex, "Cannot toot item {item}", item);
                         }
                     }
 
@@ -91,12 +89,24 @@ namespace RssBot
             return unpublishedItems;
         }
 
+        private static bool UrlHasExcludes(string url, string? excludes)
+        {
+            if (excludes == null) return false; 
+            var excludeList = excludes.Split(" ");
+            foreach (var exclude in excludeList)
+            {
+                if (url.Contains(exclude, StringComparison.CurrentCultureIgnoreCase)) return true;
+            }
+            return false;
+        }
+
         private static BotConfig? GetBotForRssItem(FeedConfig config, RssItem item)
         {
             foreach (var bot in config.Bots)
             {
-                if (item.Url.Contains(bot.UrlFilter) && (bot.UrlExclude == null || !item.Url.Contains(bot.UrlExclude)))
+                if (item.Url.Contains(bot.UrlFilter, StringComparison.InvariantCultureIgnoreCase))
                 {
+                    if (UrlHasExcludes(item.Url, bot.UrlExclude)) continue;
                     return bot;
                 }
             }
