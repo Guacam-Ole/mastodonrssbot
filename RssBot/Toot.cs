@@ -39,7 +39,7 @@ namespace RssBot
                 allTags = string.Join(" ", rssItem.Tags.Where(q => !ignoreTags.Contains(q)).Select(q => "#" + q));
             }
 
-            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n{rssItem.Url}\n\n{allTags}";
+            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
             Stream? imageStream = null;
             if (rssItem.ImageUrl != null)
             {
