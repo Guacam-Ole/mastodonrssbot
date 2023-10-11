@@ -8,6 +8,7 @@
         {
           "id": "News.Hamburg",
           "urlfilter": "/nachrichten/hamburg",
+          "urlexclude": "podcast",
           "typefilter": "Article",
           "showimage": true,
           "showtags": true,
@@ -17,6 +18,7 @@
         {
           "id": "Sport.Hamburg",
           "urlfilter": "/sport/",
+          "urlexclude": "podcast",
           "showimage": true,
           "showtags": true,
           "ignoretags": null,
@@ -25,6 +27,7 @@
         {
           "id": "Hamburg.HamburgJournal",
           "urlfilter": "/fernsehen/sendungen/hamburg_journal",
+          "urlexclude": "podcast",
           "typefilter": "Video",
           "showimage": true,
           "showtags": true,

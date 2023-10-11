@@ -37,9 +37,9 @@ namespace RssBot
                 {
                     var states = db.GetCollection<State>();
                     var match = states.FindById(feedConfig.Url);
-                    match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddHours(-1) };
+                    match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddMinutes(-10) };
 
-                    //match.LastFeed = DateTime.Now.AddHours(-24);      // testing only
+                    
 
                     var feed = await FeedReader.ReadAsync(feedConfig.Url);
                     if (feed.Type != FeedType.Rss_1_0)
@@ -53,14 +53,22 @@ namespace RssBot
                         _logger.LogInformation("Nothing new on feed '{config}' since '{since}'", feedConfig, match.LastFeed);
                         return unpublishedItems;
                     }
-
-                    foreach (var item in feed.Items.Where(q => q.PublishingDate > match.LastFeed))
+                    var newItems = feed.Items.Where(q => q.PublishingDate > match.LastFeed);
+                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'" , newItems.Count(),  match.LastFeed);
+                    foreach (var item in newItems)
                     {
-                        var x = item.SpecificItem.Element.Descendants().ToList();
-                        var rssItem = (item.ToRssItem());
-                        var bot = GetBotForRssItem(feedConfig, rssItem);
-                        if (bot == null) continue;
-                        unpublishedItems[bot].Add(rssItem);
+                        try
+                        {
+                            var x = item.SpecificItem.Element.Descendants().ToList();
+                            var rssItem = (item.ToRssItem());
+                            var bot = GetBotForRssItem(feedConfig, rssItem);
+                            if (bot == null) continue;
+                            unpublishedItems[bot].Add(rssItem);
+                        }
+                        catch (Exception ex) 
+                        {
+                            _logger.LogError( ex, "Cannot toot item {item}", item);
+                        }
                     }
 
                     states.Upsert(match);
