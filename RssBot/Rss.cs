@@ -37,11 +37,8 @@ namespace RssBot
                 {
                     var states = db.GetCollection<State>();
                     var match = states.FindById(feedConfig.Url);
-                    match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddMinutes(-10) };
+                    //match ??= new State { Id = feedConfig.Url, LastFeed = DateTime. Now.AddMinutes(-10) };
 
-                    var lastFeed = match.LastFeed;
-                    match.LastFeed = DateTime.Now;
-                    states.Upsert(match);
 
 
 
@@ -52,28 +49,42 @@ namespace RssBot
                         return unpublishedItems;
                     }
 
-                    if (feed.LastUpdatedDate < lastFeed)
+          
+                    var newItems = feed.Items; //.Where(q => q.PublishingDate > lastFeed);
+                    if (match==null)
                     {
-                        _logger.LogInformation("Nothing new on feed '{config}' since '{since}'", feedConfig, lastFeed);
-                        return unpublishedItems;
+                        match= new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
+                        // firststart
+                        foreach (var item in newItems)
+                        {
+                            match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });    
+                        }
+                    } else
+                    {
+                        // cleanup old stuff
+                        match.PostedItems.RemoveAll(q => q.ReadDate < DateTime.Now.AddDays(-120));
                     }
-                    var newItems = feed.Items.Where(q => q.PublishingDate > lastFeed);
-                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'" , newItems.Count(),  lastFeed);
+                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'" , newItems.Count(),  match.LastFeed);
                     foreach (var item in newItems)
                     {
                         try
                         {
+                            if (match.PostedItems.Any(q => q.Id == item.Id)) continue;
                             var x = item.SpecificItem.Element.Descendants().ToList();
                             var rssItem = (item.ToRssItem());
                             var bot = GetBotForRssItem(feedConfig, rssItem);
+                            match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });
                             if (bot == null) continue;
                             unpublishedItems[bot].Add(rssItem);
+
                         }
                         catch (Exception ex) 
                         {
                             _logger.LogError( ex, "Cannot toot item {item}", item);
                         }
                     }
+
+                    match.LastFeed = DateTime.Now;
                     states.Upsert(match);
                 }
             }
