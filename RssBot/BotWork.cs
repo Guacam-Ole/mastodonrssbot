@@ -22,7 +22,15 @@ namespace RssBot
             {
                 foreach (var item in botItems.Value)
                 {
-                    await _toot.SendToot(botItems.Key, item);
+                    try
+                    {
+                        await _toot.SendToot(botItems.Key, item);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "failed sending toot for {key}, {item}", botItems.Key, item);
+                        throw;
+                    }
                 }
             }
             _logger.LogInformation("Done");

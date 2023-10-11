@@ -39,7 +39,11 @@ namespace RssBot
                     var match = states.FindById(feedConfig.Url);
                     match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddMinutes(-10) };
 
-                    
+                    var lastFeed = match.LastFeed;
+                    match.LastFeed = DateTime.Now;
+                    states.Upsert(match);
+
+
 
                     var feed = await FeedReader.ReadAsync(feedConfig.Url);
                     if (feed.Type != FeedType.Rss_1_0)
@@ -48,13 +52,13 @@ namespace RssBot
                         return unpublishedItems;
                     }
 
-                    if (feed.LastUpdatedDate < match.LastFeed)
+                    if (feed.LastUpdatedDate < lastFeed)
                     {
-                        _logger.LogInformation("Nothing new on feed '{config}' since '{since}'", feedConfig, match.LastFeed);
+                        _logger.LogInformation("Nothing new on feed '{config}' since '{since}'", feedConfig, lastFeed);
                         return unpublishedItems;
                     }
-                    var newItems = feed.Items.Where(q => q.PublishingDate > match.LastFeed);
-                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'" , newItems.Count(),  match.LastFeed);
+                    var newItems = feed.Items.Where(q => q.PublishingDate > lastFeed);
+                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'" , newItems.Count(),  lastFeed);
                     foreach (var item in newItems)
                     {
                         try
@@ -70,7 +74,6 @@ namespace RssBot
                             _logger.LogError( ex, "Cannot toot item {item}", item);
                         }
                     }
-
                     states.Upsert(match);
                 }
             }
