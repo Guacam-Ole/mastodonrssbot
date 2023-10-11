@@ -37,9 +37,9 @@ namespace RssBot
                 {
                     var states = db.GetCollection<State>();
                     var match = states.FindById(feedConfig.Url);
-                    match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddHours(-10) };
+                    match ??= new State { Id = feedConfig.Url, LastFeed = DateTime.Today.AddHours(-1) };
 
-                    match.LastFeed = DateTime.Now.AddHours(-10);      // testing only
+                    //match.LastFeed = DateTime.Now.AddHours(-24);      // testing only
 
                     var feed = await FeedReader.ReadAsync(feedConfig.Url);
                     if (feed.Type != FeedType.Rss_1_0)

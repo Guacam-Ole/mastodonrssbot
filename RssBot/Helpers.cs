@@ -24,18 +24,9 @@ namespace RssBot
             };
         }
 
-        public static List<string> GetTags(XElement feedElement)
+        public static string? GetTags(XElement feedElement)
         {
-            var tags = feedElement.Descendants().Where(q => q.Name.LocalName == "keywords").FirstOrDefault()?.FirstNode?.ToString();
-            if (tags == null) return new List<string>();
-            if (tags.Contains(","))
-            {
-                return tags.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct().ToList();
-            }
-            else
-            {
-                return tags.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct().ToList();
-            }
+            return feedElement.Descendants().Where(q => q.Name.LocalName == "keywords").FirstOrDefault()?.FirstNode?.ToString();
         }
 
         public static KeyValuePair<string, string>? GetBestImage(XElement feedElement)

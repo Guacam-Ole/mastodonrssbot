@@ -1,4 +1,5 @@
 {
+  "privateonly": true,
   "feeds": [
     {
       "url": "http://www.ndr.de/nachrichten/hamburg/index-rss.xml",
@@ -10,10 +11,19 @@
           "typefilter": "Article",
           "showimage": true,
           "showtags": true,
-          "ignoretags": null
+          "ignoretags": null,
+          "additionaltags": "HamburgNews"
         },
         {
-          "id": "HamburgJournal",
+          "id": "Sport.Hamburg",
+          "urlfilter": "/sport/",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": null,
+          "additionaltags": "HamburgSport NeusVomSpocht"
+        },
+        {
+          "id": "Hamburg.HamburgJournal",
           "urlfilter": "/fernsehen/sendungen/hamburg_journal",
           "typefilter": "Video",
           "showimage": true,
@@ -30,6 +40,52 @@
           "ignoretags": "hamburg"
         }
       ]
+    }
+  ],
+  "tagreplacements": [
+    {
+      "from": "hamburger sv",
+      "to": "HSV"
+    },
+    {
+      "from": "FC St. Pauli",
+      "to": "FCSP"
+    },
+    {
+      "from": "FC St.Pauli",
+      "to": "FCSP"
+    },
+    {
+      "from": "FC Sankt Pauli",
+      "to": "FCSP"
+    },
+    {
+      "from": "Sankt Pauli",
+      "to": "SanktPauli"
+    },
+    {
+      "from": "1. Bundesliga",
+      "to": "BuLi"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    },
+    {
+      "from": "Norddeutscher Rundfunk",
+      "to": "NDR"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
     }
   ]
 }

@@ -2,7 +2,15 @@
 {
     public class Config
     {
+        public bool PrivateOnly { get; set; }   // Don'T toot public
         public List<FeedConfig> Feeds { get; set; }
+        public List<TagReplacement> TagReplacements { get; set; }
+    }
+
+    public class TagReplacement
+    {
+        public string From { get; set; }    
+        public string To { get; set; }  
     }
 
     public class FeedConfig
@@ -20,5 +28,6 @@
         public bool ShowImage { get; set; }
         public bool ShowTags { get; set; }
         public string? IgnoreTags { get; set; }
+        public string? AdditionalTags { get; set; }
     }
 }
