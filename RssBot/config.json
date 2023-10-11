@@ -1,36 +1,94 @@
 {
+  "privateonly": false,
   "feeds": [
     {
-      "url":"https://",
-      "intervalMinutes":"15",
+      "url": "http://www.ndr.de/nachrichten/hamburg/index-rss.xml",
+      "intervalMinutes": "15",
       "bots": [
         {
-          "id":"News.Hamburg",
-          "urlfilter":"/nachrichten/hamburg",  
-          "typefilter":"Article",
-          "showimage":true,
-          "showtags":true,
-          "ignoretags":null
+          "id": "News.Hamburg",
+          "urlfilter": "/nachrichten/hamburg",
+          "urlexclude": "podcast topvideos",
+          "typefilter": "Article",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": null,
+          "additionaltags": "HamburgNews"
         },
         {
-          "id":"HamburgJournal",
-          "urlfilter":"/fernsehen/sendungen/hamburg_journal",  
-          "typefilter":"Article",
-          "showimage":true,
-          "showtags":true,
-          "ignoretags":"hamburg"
+          "id": "Sport.Hamburg",
+          "urlfilter": "/sport/",
+          "urlexclude": "podcast topvideos",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": null,
+          "additionaltags": "HamburgSport NeusVomSpocht"
         },
-        ,        {
-          "id":"Sendungen.hamburg",
-          "urlfilter":"/fernsehen/sendungen/", 
-          "urlexclude":"hamburg_journal",
-          "typefilter":null,
-          "showimage":true,
-          "showtags":true,
-          "ignoretags":"hamburg"
+        {
+          "id": "Hamburg.HamburgJournal",
+          "urlfilter": "/fernsehen/sendungen/hamburg_journal",
+          "urlexclude": "podcast topvideos",
+          "typefilter": "Video",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": "hamburg"
         },
+        {
+          "id": "Sendungen.hamburg",
+          "urlfilter": "/fernsehen/sendungen/",
+          "urlexclude": "hamburg_journal podcast topvideos",
+          "typefilter": "Video",
+          "showimage": true,
+          "showtags": true,
+          "ignoretags": "hamburg"
+        }
       ]
     }
-
+  ],
+  "tagreplacements": [
+    {
+      "from": "hamburger sv",
+      "to": "HSV"
+    },
+    {
+      "from": "FC St. Pauli",
+      "to": "FCSP"
+    },
+    {
+      "from": "FC St.Pauli",
+      "to": "FCSP"
+    },
+    {
+      "from": "FC Sankt Pauli",
+      "to": "FCSP"
+    },
+    {
+      "from": "Sankt Pauli",
+      "to": "SanktPauli"
+    },
+    {
+      "from": "1. Bundesliga",
+      "to": "BuLi"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    },
+    {
+      "from": "Norddeutscher Rundfunk",
+      "to": "NDR"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    },
+    {
+      "from": "2. Bundesliga",
+      "to": "BuLi2"
+    }
   ]
 }
