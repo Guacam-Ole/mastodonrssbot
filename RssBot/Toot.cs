@@ -50,7 +50,10 @@ namespace RssBot
             {
                 var typefilters = botConfig.TypeFilter.Split(" ");
                 if (!typefilters.Any(q => q.Contains(rssItem.ItemType ?? "wrong")))
+                {
+                    _logger.LogDebug("Toot not sent because of typefilter: '{type}'", rssItem.ItemType);
                     return null;
+                }
             }
             var allTags = botConfig.ShowTags ? GetTagString(botConfig, rssItem) : string.Empty;
             string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
@@ -59,9 +62,13 @@ namespace RssBot
             if (rssItem.Image?.Url != null && _config.LoadImages)
             {
                 var disabledImageSources = (_config.IgnoreImageSources ?? string.Empty).Split(" ");
-                if (!disabledImageSources.Any(q => rssItem.Image.Url.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
+                if (rssItem.Image.Source == null || !disabledImageSources.Any(q => rssItem.Image.Source.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
                 {
                     imageStream = await DownloadImage(rssItem.Image.Url);
+                }
+                else
+                {
+                    _logger.LogDebug("Image not added because of sourcefilter: '{source}'", rssItem.Image.Source);
                 }
             }
 
@@ -114,20 +121,23 @@ namespace RssBot
             var client = GetServiceClient(botId);
             if (client == null)
             {
-                _logger.LogWarning("Bot not found or disabled");
+                _logger.LogWarning("Bot '{id}' not found or disabled", botId);
                 return null;
             }
             string? attachmentId = null;
             if (media != null) attachmentId = await UploadMedia(client, media, "preview.png", altTag);
 
+            Status? status;
             if (attachmentId != null)
             {
-                return await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo, mediaIds: new List<string> { attachmentId });
+                status = await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo, mediaIds: new List<string> { attachmentId });
             }
             else
             {
-                return await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo);
+                status = await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo);
             }
+            _logger.LogDebug("Toot sent with {chars} Chars", content.Length);
+            return status;
         }
 
         private MastodonClient? GetServiceClient(string botId)
