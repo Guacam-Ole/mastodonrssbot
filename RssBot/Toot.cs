@@ -28,7 +28,7 @@ namespace RssBot
 
         private async Task<string?> UploadMedia(MastodonClient client, Stream fileStream, string filename, string description)
         {
-            string attachmentId = null;
+            string? attachmentId;
             try
             {
                 _logger.LogDebug("Uploading Image {filename}", filename);
@@ -38,6 +38,7 @@ namespace RssBot
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error uploading file '{filename}' ", filename);
                 return null;
             }
             return attachmentId;
@@ -45,15 +46,38 @@ namespace RssBot
 
         public async Task<Status?> SendToot(BotConfig botConfig, RssItem rssItem)
         {
-            var allTags = botConfig.ShowTags ? GetTagString(botConfig, rssItem) : string.Empty;
-
-            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
-            Stream? imageStream = null;
-            if (rssItem.ImageUrl != null)
+            if (botConfig.TypeFilter != null)
             {
-                imageStream = await DownloadImage(rssItem.ImageUrl);
+                var typefilters = botConfig.TypeFilter.Split(" ");
+                if (!typefilters.Any(q => q.Contains(rssItem.ItemType ?? "wrong")))
+                    return null;
             }
-            return await SendToot(botConfig.Id, content, null, imageStream, rssItem.ImageDescription ?? "Vorschaubild");
+            var allTags = botConfig.ShowTags ? GetTagString(botConfig, rssItem) : string.Empty;
+            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
+
+            Stream? imageStream = null;
+            if (rssItem.Image?.Url != null && _config.LoadImages)
+            {
+                var disabledImageSources = (_config.IgnoreImageSources ?? string.Empty).Split(" ");
+                if (!disabledImageSources.Any(q => rssItem.Image.Url.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    imageStream = await DownloadImage(rssItem.Image.Url);
+                }
+            }
+
+            if (_config.DisableToots)
+            {
+                string imgTxt = "(article hat no image)";
+                if (rssItem?.Image?.Url != null)
+                {
+                    if (!_config.LoadImages) imgTxt = "(Download DISABLED)";
+                    else if (imageStream == null) imgTxt = "(image not downloaded)";
+                    else imgTxt = $"({rssItem?.Image?.Url})";
+                }
+                _logger.LogDebug("Not tooting the following:  '{content}' {imgtxt}", content, imgTxt);
+                return null;
+            }
+            return await SendToot(botConfig.Id, content, null, imageStream, rssItem.Image?.Description ?? "Vorschaubild");
         }
 
         private string GetTagString(BotConfig botConfig, RssItem rssItem)
@@ -73,13 +97,10 @@ namespace RssBot
                 var additionalTags = botConfig.AdditionalTags.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
                 tagList.AddRange(additionalTags);
             }
-
-            tagList.ForEach(q => q = Regex.Replace(q, "[^A-Za-z0-9]", ""));
-
-            return string.Join(" ", tagList.Distinct().Select(q => "#" + q));
+            return string.Join(" ", tagList.Distinct().Select(q => "#" + Regex.Replace(q, "[^A-Za-z0-9äöüÄÖßÜ_]", "")));
         }
 
-        private async Task<Stream?> DownloadImage(string url)
+        private static async Task<Stream?> DownloadImage(string url)
         {
             HttpClient client = new();
             var response = await client.GetAsync(new Uri(url));

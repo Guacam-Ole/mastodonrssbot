@@ -49,10 +49,11 @@ namespace RssBot
                     {
                         // first start, mark all as already sent
                         match = new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
-                        
+
                         foreach (var item in feed.Items)
                         {
-                            match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });
+                            var id = item.GetIdentifier();
+                            if (id != null) match.PostedItems.Add(new PostedItem { Id = id, ReadDate = DateTime.Now });
                         }
                     }
                     else
@@ -60,18 +61,19 @@ namespace RssBot
                         // cleanup old stuff
                         match.PostedItems.RemoveAll(q => q.ReadDate < DateTime.Now.AddDays(-120));
                     }
-                    var newItems = feed.Items.Where(q => !match.PostedItems.Any(m => m.Id == q.Id));
-
-                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'", newItems.Count(), match.LastFeed);
-                    foreach (var item in newItems)
+                    int newItemCount = 0;
+                    foreach (var item in feed.Items)
                     {
                         try
                         {
                             var x = item.SpecificItem.Element.Descendants().ToList();
-                            var rssItem = (item.ToRssItem());
+                            var rssItem = item.ToRssItem();
+                            if (rssItem == null) continue;
+                            if (match.PostedItems.Any(q => q.Id == rssItem.Identifier)) continue;
                             var bot = GetBotForRssItem(feedConfig, rssItem);
-                            match.PostedItems.Add(new PostedItem { Id = item.Id, ReadDate = DateTime.Now });
                             if (bot == null) continue;
+                            newItemCount++;
+                            match.PostedItems.Add(new PostedItem { Id = rssItem.Identifier, ReadDate = DateTime.Now });
                             unpublishedItems[bot].Add(rssItem);
                         }
                         catch (Exception ex)
@@ -79,7 +81,7 @@ namespace RssBot
                             _logger.LogError(ex, "Cannot toot item {item}", item);
                         }
                     }
-
+                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'", newItemCount, match.LastFeed);
                     match.LastFeed = DateTime.Now;
                     states.Upsert(match);
                 }

@@ -4,7 +4,10 @@ using Microsoft.Extensions.Logging;
 
 using RssBot;
 
-Console.WriteLine("Hello, World!");
+var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+var attr = Attribute.GetCustomAttribute(assembly, typeof(BuildDateTimeAttribute)) as BuildDateTimeAttribute;
+Console.WriteLine("Starting up RSSBot Build " + attr?.Date);
+
 var services = new ServiceCollection();
 
 services.AddLogging(logging =>
@@ -22,8 +25,3 @@ services.AddScoped<BotWork>();
 var provider = services.BuildServiceProvider();
 var botwork = provider.GetRequiredService<BotWork>();
 await botwork.RetrieveAndSendToots();
-
-
-
-
-
