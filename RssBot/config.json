@@ -1,44 +1,45 @@
 {
   "privateonly": false,
+  "disabletoots": false,
+  "loadimages": true,
+  "ignoreimagesources": "Fotolia dpa",
   "feeds": [
     {
       "url": "http://www.ndr.de/nachrichten/hamburg/index-rss.xml",
-      "intervalMinutes": "15",
       "bots": [
         {
           "id": "News.Hamburg",
           "urlfilter": "/nachrichten/hamburg",
           "urlexclude": "podcast topvideos",
-          "typefilter": "Article",
-          "showimage": true,
+          "typefilter": "Artikel",
+          "showimage": false,
           "showtags": true,
           "ignoretags": null,
-          "additionaltags": "HamburgNews"
+          "additionaltags": "HamburgNews Hamburg"
         },
         {
           "id": "Sport.Hamburg",
           "urlfilter": "/sport/",
           "urlexclude": "podcast topvideos",
-          "showimage": true,
+          "showimage": false,
           "showtags": true,
           "ignoretags": null,
-          "additionaltags": "HamburgSport NeusVomSpocht"
+          "additionaltags": "HamburgSport NeusVomSpocht Hamburg"
         },
         {
           "id": "Hamburg.HamburgJournal",
           "urlfilter": "/fernsehen/sendungen/hamburg_journal",
           "urlexclude": "podcast topvideos",
-          "typefilter": "Video",
-          "showimage": true,
+          "showimage": false,
           "showtags": true,
-          "ignoretags": "hamburg"
+          "additionaltags": "Hamburg HamburgJournal"
         },
         {
           "id": "Sendungen.hamburg",
           "urlfilter": "/fernsehen/sendungen/",
           "urlexclude": "hamburg_journal podcast topvideos",
           "typefilter": "Video",
-          "showimage": true,
+          "showimage": false,
           "showtags": true,
           "ignoretags": "hamburg"
         }
@@ -89,6 +90,10 @@
     {
       "from": "2. Bundesliga",
       "to": "BuLi2"
+    },
+    {
+      "from": "AfD",
+      "to": "FckAfd"
     }
   ]
 }

@@ -3,6 +3,9 @@
     public class Config
     {
         public bool PrivateOnly { get; set; }   // Don'T toot public
+        public bool DisableToots { get; set; }
+        public bool LoadImages { get; set; }
+        public string? IgnoreImageSources { get; set; }
         public List<FeedConfig> Feeds { get; set; }
         public List<TagReplacement> TagReplacements { get; set; }
     }
@@ -25,9 +28,9 @@
         public string UrlFilter { get; set; }
         public string? UrlExclude { get; set; }
         public string? TypeFilter { get; set; }
-        public bool ShowImage { get; set; }
         public bool ShowTags { get; set; }
         public string? IgnoreTags { get; set; }
         public string? AdditionalTags { get; set; }
+        public bool ShowImage { get; set; }
     }
 }

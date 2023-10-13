@@ -5,8 +5,10 @@ using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
+using RssBot.Database;
 using RssBot.RssBot;
 
+using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 
 namespace RssBot
@@ -28,7 +30,7 @@ namespace RssBot
 
         private async Task<string?> UploadMedia(MastodonClient client, Stream fileStream, string filename, string description)
         {
-            string attachmentId = null;
+            string? attachmentId;
             try
             {
                 _logger.LogDebug("Uploading Image {filename}", filename);
@@ -38,6 +40,7 @@ namespace RssBot
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error uploading file '{filename}' ", filename);
                 return null;
             }
             return attachmentId;
@@ -45,15 +48,89 @@ namespace RssBot
 
         public async Task<Status?> SendToot(BotConfig botConfig, RssItem rssItem)
         {
-            var allTags = botConfig.ShowTags ? GetTagString(botConfig, rssItem) : string.Empty;
-
-            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
-            Stream? imageStream = null;
-            if (rssItem.ImageUrl != null)
+            if (botConfig.TypeFilter != null)
             {
-                imageStream = await DownloadImage(rssItem.ImageUrl);
+                var typefilters = botConfig.TypeFilter.Split(" ");
+                if (!typefilters.Any(q => q.Contains(rssItem.ItemType ?? "wrong")))
+                {
+                    _logger.LogDebug("Toot not sent because of typefilter: '{type}'", rssItem.ItemType);
+                    return null;
+                }
             }
-            return await SendToot(botConfig.Id, content, null, imageStream, rssItem.ImageDescription ?? "Vorschaubild");
+            var allTags = botConfig.ShowTags ? GetTagString(botConfig, rssItem) : string.Empty;
+            string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
+
+            Stream? imageStream = null;
+            if (rssItem.Image?.Url != null && _config.LoadImages && botConfig.ShowImage)
+            {
+                var disabledImageSources = (_config.IgnoreImageSources ?? string.Empty).Split(" ");
+                if (string.IsNullOrEmpty(rssItem.Description) || rssItem.Image.Source == null || !disabledImageSources.Any(q => rssItem.Image.Source.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    imageStream = await DownloadImage(rssItem.Image.Url);
+                }
+                else
+                {
+                    _logger.LogDebug("Image not added because of sourcefilter: '{source}'", rssItem.Image.Source);
+                }
+            }
+
+            if (_config.DisableToots)
+            {
+                string imgTxt = "(article hat no image)";
+                if (rssItem?.Image?.Url != null)
+                {
+                    if (!_config.LoadImages) imgTxt = "(Download DISABLED)";
+                    else if (imageStream == null) imgTxt = "(image not downloaded)";
+                    else imgTxt = $"({rssItem?.Image?.Url})";
+                }
+                _logger.LogDebug("Not tooting the following:  '{content}' {imgtxt}", content, imgTxt);
+                return null;
+            }
+            var tootState = GetTootState(rssItem);
+            _logger.LogDebug("Sending toot with id '{id}': '{title}'", rssItem.Identifier, rssItem.Title);
+
+            var mastodonResponse = tootState == null
+                ? await SendToot(botConfig.Id, content, null, imageStream, rssItem.Image?.Description ?? "Vorschaubild")
+                : await UpdateToot(botConfig.Id, content, tootState.MastodonId, imageStream, rssItem.Image?.Description ?? "Vorschaubild");
+
+            if (mastodonResponse != null)
+            {
+                UpdateTootState(tootState, rssItem, mastodonResponse.Id);
+            }
+            return mastodonResponse;
+        }
+
+        private static TootState GetTootState(RssItem rssItem)
+        {
+            using var db = new LiteDB.LiteDatabase("state.db");
+            var states = db.GetCollection<TootState>();
+            return states.FindById(rssItem.Identifier);
+        }
+
+        private void UpdateTootState(TootState? tootState, RssItem rssItem, string mastodonId)
+        {
+            var hash = rssItem.GetHash();
+
+            if (tootState == null)
+            {
+                tootState = new TootState
+                {
+                    Id = rssItem.Identifier,
+                    Created = DateTime.Now
+                };
+                _logger.LogDebug("new tootstate created for '{rssId}'|'{mastodonId}'. Hash: '{hash}'", rssItem.Identifier, mastodonId, hash);
+            }
+            else
+            {
+                _logger.LogDebug("updating tootstate for '{rssId}'|'{mastodonId}'. Hash: '{oldHash}'->'{newHash}'", rssItem.Identifier, mastodonId, tootState.Hash, hash);
+            }
+            tootState.Hash = hash;
+            tootState.Updated = DateTime.Now;
+            tootState.MastodonId = mastodonId;
+
+            using var db = new LiteDB.LiteDatabase("state.db");
+            var states = db.GetCollection<TootState>();
+            states.Upsert(tootState);
         }
 
         private string GetTagString(BotConfig botConfig, RssItem rssItem)
@@ -73,13 +150,10 @@ namespace RssBot
                 var additionalTags = botConfig.AdditionalTags.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
                 tagList.AddRange(additionalTags);
             }
-
-            tagList.ForEach(q => q = Regex.Replace(q, "[^A-Za-z0-9]", ""));
-
-            return string.Join(" ", tagList.Distinct().Select(q => "#" + q));
+            return string.Join(" ", tagList.Distinct().Select(q => "#" + Regex.Replace(q, "[^A-Za-z0-9äöüÄÖßÜ_]", "")));
         }
 
-        private async Task<Stream?> DownloadImage(string url)
+        private static async Task<Stream?> DownloadImage(string url)
         {
             HttpClient client = new();
             var response = await client.GetAsync(new Uri(url));
@@ -87,26 +161,51 @@ namespace RssBot
             return await response.Content.ReadAsStreamAsync();
         }
 
-        public async Task<Status?> SendToot(string botId, string content, string? replyTo, Stream? media, string altTag)
+        public async Task<Status?> UpdateToot(string botId, string content, string tootId, Stream? media, string altTag)
         {
-            _logger.LogDebug("Sending Toot");
             var client = GetServiceClient(botId);
             if (client == null)
             {
-                _logger.LogWarning("Bot not found or disabled");
+                _logger.LogWarning("Bot '{id}' not found or disabled", botId);
+                return null;
+            }
+            string? attachmentId = null;
+            if (media != null) attachmentId = await UploadMedia(client, media, "preview.png", altTag);
+            Status? status;
+            if (attachmentId != null)
+            {
+                status = await client.EditStatus(tootId, content, mediaIds: new List<string> { attachmentId });
+            }
+            else
+            {
+                status = await client.EditStatus(tootId, content);
+            }
+            _logger.LogDebug("Updated toot '{tootId}'  sent with {chars} Chars", tootId, content.Length);
+            return status;
+        }
+
+        public async Task<Status?> SendToot(string botId, string content, string? replyTo, Stream? media, string altTag)
+        {
+            var client = GetServiceClient(botId);
+            if (client == null)
+            {
+                _logger.LogWarning("Bot '{id}' not found or disabled", botId);
                 return null;
             }
             string? attachmentId = null;
             if (media != null) attachmentId = await UploadMedia(client, media, "preview.png", altTag);
 
+            Status? status;
             if (attachmentId != null)
             {
-                return await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo, mediaIds: new List<string> { attachmentId });
+                status = await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo, mediaIds: new List<string> { attachmentId });
             }
             else
             {
-                return await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo);
+                status = await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo);
             }
+            _logger.LogDebug("Toot '{tootid}' sent with {chars} Chars", content.Length, status.Id);
+            return status;
         }
 
         private MastodonClient? GetServiceClient(string botId)

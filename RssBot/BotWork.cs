@@ -33,7 +33,6 @@ namespace RssBot
                     }
                 }
             }
-            _logger.LogInformation("Done");
         }
     }
 }
