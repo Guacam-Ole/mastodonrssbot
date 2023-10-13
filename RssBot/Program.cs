@@ -16,7 +16,7 @@ services.AddLogging(logging =>
     logging.AddConsole();
     logging.SetMinimumLevel(LogLevel.Debug);
     var logFile = "rssmastodon.log";
-    logging.AddFile(logFile, append: true);
+    logging.AddFile(logFile, conf => { conf.Append = true; conf.MaxRollingFiles = 1; conf.FileSizeLimitBytes = 100000; }); 
 });
 services.AddScoped<Rss>();
 services.AddScoped<Toot>();
