@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
+using RssBot.Database;
 using RssBot.RssBot;
 
 namespace RssBot
@@ -36,6 +37,7 @@ namespace RssBot
                 using (var db = new LiteDB.LiteDatabase("state.db"))
                 {
                     var states = db.GetCollection<State>();
+                    var tootStates = db.GetCollection<TootState>();
                     var match = states.FindById(feedConfig.Url);
 
                     var feed = await FeedReader.ReadAsync(feedConfig.Url);
@@ -61,6 +63,7 @@ namespace RssBot
                         // cleanup old stuff
                         match.PostedItems.RemoveAll(q => q.ReadDate < DateTime.Now.AddDays(-120));
                     }
+                  
                     int newItemCount = 0;
                     foreach (var item in feed.Items)
                     {
@@ -69,7 +72,15 @@ namespace RssBot
                             var x = item.SpecificItem.Element.Descendants().ToList();
                             var rssItem = item.ToRssItem();
                             if (rssItem == null) continue;
-                            if (match.PostedItems.Any(q => q.Id == rssItem.Identifier)) continue;
+                            if (match.PostedItems.Any(q => q.Id == rssItem.Identifier))
+                            {
+                                // Already posted, check updates
+                                var tootState = tootStates.FindById(rssItem.Identifier);
+                                if (tootState == null) 
+                                    continue; // Posted but don't know what Id
+                                if (tootState.Hash == rssItem.GetHash())
+                                    continue; // Posted with the same content
+                            }
                             var bot = GetBotForRssItem(feedConfig, rssItem);
                             if (bot == null) continue;
                             newItemCount++;
@@ -80,9 +91,11 @@ namespace RssBot
                         {
                             _logger.LogError(ex, "Cannot toot item {item}", item);
                         }
+
                     }
-                    _logger.LogInformation("Tooting '{count}' feed items since '{lastfeed}'", newItemCount, match.LastFeed);
                     match.LastFeed = DateTime.Now;
+                    _logger.LogInformation("Tooting '{count}' feed items since '{lastfeed}'", newItemCount, match.LastFeed);
+
                     if (!_config.DisableToots) states.Upsert(match);
                 }
             }

@@ -5,8 +5,10 @@ using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
+using RssBot.Database;
 using RssBot.RssBot;
 
+using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 
 namespace RssBot
@@ -59,7 +61,7 @@ namespace RssBot
             string content = $"{rssItem.Title}\n\n{rssItem.Description}\n\n{rssItem.Url}\n\n{allTags}";
 
             Stream? imageStream = null;
-            if (rssItem.Image?.Url != null && _config.LoadImages)
+            if (rssItem.Image?.Url != null && _config.LoadImages && botConfig.ShowImage)
             {
                 var disabledImageSources = (_config.IgnoreImageSources ?? string.Empty).Split(" ");
                 if (string.IsNullOrEmpty(rssItem.Description) || rssItem.Image.Source == null || !disabledImageSources.Any(q => rssItem.Image.Source.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
@@ -84,8 +86,51 @@ namespace RssBot
                 _logger.LogDebug("Not tooting the following:  '{content}' {imgtxt}", content, imgTxt);
                 return null;
             }
+            var tootState = GetTootState(rssItem);
             _logger.LogDebug("Sending toot with id '{id}': '{title}'", rssItem.Identifier, rssItem.Title);
-            return await SendToot(botConfig.Id, content, null, imageStream, rssItem.Image?.Description ?? "Vorschaubild");
+
+            var mastodonResponse = tootState == null
+                ? await SendToot(botConfig.Id, content, null, imageStream, rssItem.Image?.Description ?? "Vorschaubild")
+                : await UpdateToot(botConfig.Id, content, tootState.MastodonId, imageStream, rssItem.Image?.Description ?? "Vorschaubild");
+
+            if (mastodonResponse != null)
+            {
+                UpdateTootState(tootState, rssItem, mastodonResponse.Id);
+            }
+            return mastodonResponse;
+        }
+
+        private static TootState GetTootState(RssItem rssItem)
+        {
+            using var db = new LiteDB.LiteDatabase("state.db");
+            var states = db.GetCollection<TootState>();
+            return states.FindById(rssItem.Identifier);
+        }
+
+        private void UpdateTootState(TootState? tootState, RssItem rssItem, string mastodonId)
+        {
+            var hash = rssItem.GetHash();
+
+            if (tootState == null)
+            {
+                tootState = new TootState
+                {
+                    Id = rssItem.Identifier,
+                    Created = DateTime.Now
+                };
+                _logger.LogDebug("new tootstate created for '{rssId}'|'{mastodonId}'. Hash: '{hash}'", rssItem.Identifier, mastodonId, hash);
+            }
+            else
+            {
+                _logger.LogDebug("updating tootstate for '{rssId}'|'{mastodonId}'. Hash: '{oldHash}'->'{newHash}'", rssItem.Identifier, mastodonId, tootState.Hash, hash);
+            }
+            tootState.Hash = hash;
+            tootState.Updated = DateTime.Now;
+            tootState.MastodonId = mastodonId;
+
+            using var db = new LiteDB.LiteDatabase("state.db");
+            var states = db.GetCollection<TootState>();
+            states.Upsert(tootState);
         }
 
         private string GetTagString(BotConfig botConfig, RssItem rssItem)
@@ -116,6 +161,29 @@ namespace RssBot
             return await response.Content.ReadAsStreamAsync();
         }
 
+        public async Task<Status?> UpdateToot(string botId, string content, string tootId, Stream? media, string altTag)
+        {
+            var client = GetServiceClient(botId);
+            if (client == null)
+            {
+                _logger.LogWarning("Bot '{id}' not found or disabled", botId);
+                return null;
+            }
+            string? attachmentId = null;
+            if (media != null) attachmentId = await UploadMedia(client, media, "preview.png", altTag);
+            Status? status;
+            if (attachmentId != null)
+            {
+                status = await client.EditStatus(tootId, content, mediaIds: new List<string> { attachmentId });
+            }
+            else
+            {
+                status = await client.EditStatus(tootId, content);
+            }
+            _logger.LogDebug("Updated toot '{tootId}'  sent with {chars} Chars", tootId, content.Length);
+            return status;
+        }
+
         public async Task<Status?> SendToot(string botId, string content, string? replyTo, Stream? media, string altTag)
         {
             var client = GetServiceClient(botId);
@@ -136,7 +204,7 @@ namespace RssBot
             {
                 status = await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo);
             }
-            _logger.LogDebug("Toot sent with {chars} Chars", content.Length);
+            _logger.LogDebug("Toot '{tootid}' sent with {chars} Chars", content.Length, status.Id);
             return status;
         }
 
