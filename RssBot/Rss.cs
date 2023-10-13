@@ -81,9 +81,9 @@ namespace RssBot
                             _logger.LogError(ex, "Cannot toot item {item}", item);
                         }
                     }
-                    _logger.LogInformation("Tooting '{count}' feeds since '{lastfeed}'", newItemCount, match.LastFeed);
+                    _logger.LogInformation("Tooting '{count}' feed items since '{lastfeed}'", newItemCount, match.LastFeed);
                     match.LastFeed = DateTime.Now;
-                    states.Upsert(match);
+                    if (!_config.DisableToots) states.Upsert(match);
                 }
             }
             return unpublishedItems;

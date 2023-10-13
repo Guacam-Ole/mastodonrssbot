@@ -62,7 +62,7 @@ namespace RssBot
             if (rssItem.Image?.Url != null && _config.LoadImages)
             {
                 var disabledImageSources = (_config.IgnoreImageSources ?? string.Empty).Split(" ");
-                if (rssItem.Image.Source == null || !disabledImageSources.Any(q => rssItem.Image.Source.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
+                if (string.IsNullOrEmpty(rssItem.Description) || rssItem.Image.Source == null || !disabledImageSources.Any(q => rssItem.Image.Source.Contains(q, StringComparison.InvariantCultureIgnoreCase)))
                 {
                     imageStream = await DownloadImage(rssItem.Image.Url);
                 }
@@ -84,6 +84,7 @@ namespace RssBot
                 _logger.LogDebug("Not tooting the following:  '{content}' {imgtxt}", content, imgTxt);
                 return null;
             }
+            _logger.LogDebug("Sending toot with id '{id}': '{title}'", rssItem.Identifier, rssItem.Title);
             return await SendToot(botConfig.Id, content, null, imageStream, rssItem.Image?.Description ?? "Vorschaubild");
         }
 
@@ -117,7 +118,6 @@ namespace RssBot
 
         public async Task<Status?> SendToot(string botId, string content, string? replyTo, Stream? media, string altTag)
         {
-            _logger.LogDebug("Sending Toot");
             var client = GetServiceClient(botId);
             if (client == null)
             {
