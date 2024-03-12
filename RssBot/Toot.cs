@@ -8,7 +8,6 @@ using Newtonsoft.Json;
 using RssBot.Database;
 using RssBot.RssBot;
 
-using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 
 namespace RssBot
@@ -204,7 +203,7 @@ namespace RssBot
             {
                 status = await client.PublishStatus(content, _config.PrivateOnly ? Visibility.Private : Visibility.Public, replyTo);
             }
-            _logger.LogDebug("Toot '{tootid}' sent with {chars} Chars", content.Length, status.Id);
+            _logger.LogDebug("Toot '{tootid}' sent with {chars} Chars", status.Id, content.Length);
             return status;
         }
 

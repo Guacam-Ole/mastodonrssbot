@@ -32,5 +32,6 @@
         public string? IgnoreTags { get; set; }
         public string? AdditionalTags { get; set; }
         public bool ShowImage { get; set; }
+        public bool Enabled { get; set; }
     }
 }
