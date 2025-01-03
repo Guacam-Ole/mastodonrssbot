@@ -398,3 +398,4 @@ FodyWeavers.xsd
 *.sln.iml
 secrets.json
 /RssBot/.idea
+/.idea
