@@ -38,9 +38,11 @@
 
   <ItemGroup>
     <Reference Include="Mastonet">
-      <HintPath>..\..\mastonetfork\Mastonet\bin\Debug\netstandard2.0\Mastonet.dll</HintPath>
+      <HintPath>..\Mastonet\bin\Debug\netstandard2.0\Mastonet.dll</HintPath>
     </Reference>
   </ItemGroup>
 
-
+  <ItemGroup>
+    <ProjectReference Include="..\mastonetfork\Mastonet\Mastonet.csproj" />
+  </ItemGroup>
 </Project>
