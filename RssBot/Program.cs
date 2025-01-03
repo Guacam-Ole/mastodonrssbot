@@ -36,6 +36,7 @@ while (true)
 {
     try
     {
+        Thread.Sleep(1000*60*5);
         await botwork.RetrieveAndSendToots();
         retries = maxTries;
     }
