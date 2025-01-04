@@ -1,9 +1,6 @@
 ﻿using CodeHollow.FeedReader;
-
 using Microsoft.Extensions.Logging;
-
 using Newtonsoft.Json;
-
 using RssBot.Database;
 using RssBot.RssBot;
 
@@ -18,13 +15,14 @@ namespace RssBot
         {
             _logger = logger;
             var config = File.ReadAllText("./config.json");
-            _config = JsonConvert.DeserializeObject<Config>(config) ?? throw new FileNotFoundException("cannot read config");
+            _config = JsonConvert.DeserializeObject<Config>(config) ??
+                      throw new FileNotFoundException("cannot read config");
         }
 
         public async Task<Dictionary<BotConfig, List<RssItem>>> ReadFeed()
         {
             var unpublishedItems = new Dictionary<BotConfig, List<RssItem>>();
-            foreach (var bots in _config.Feeds.Select(q => q.Bots.Where(q=>q.Enabled)))
+            foreach (var bots in _config.Feeds.Select(q => q.Bots.Where(q => q.Enabled)))
             {
                 foreach (var bot in bots)
                 {
@@ -49,7 +47,8 @@ namespace RssBot
 
                     if (match == null)
                     {
-                        _logger.LogInformation("First start; Mark all news as already sent. Have to wait for new items in Feed for see results");
+                        _logger.LogInformation(
+                            "First start; Mark all news as already sent. Have to wait for new items in Feed for see results");
                         // first start, mark all as already sent
                         match = new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
 
@@ -64,7 +63,7 @@ namespace RssBot
                         // cleanup old stuff
                         match.PostedItems.RemoveAll(q => q.ReadDate < DateTime.Now.AddDays(-120));
                     }
-                  
+
                     int newItemCount = 0;
                     foreach (var item in feed.Items)
                     {
@@ -77,11 +76,12 @@ namespace RssBot
                             {
                                 // Already posted, check updates
                                 var tootState = tootStates.FindById(rssItem.Identifier);
-                                if (tootState == null) 
+                                if (tootState == null)
                                     continue; // Posted but don't know what Id
                                 if (tootState.Hash == rssItem.GetHash())
                                     continue; // Posted with the same content
                             }
+
                             var bot = GetBotForRssItem(feedConfig, rssItem);
                             if (bot == null || !bot.Enabled) continue;
                             newItemCount++;
@@ -93,19 +93,18 @@ namespace RssBot
                             _logger.LogError(ex, "Cannot toot item {item}", item);
                         }
                     }
-                    if (newItemCount>0)
+
+                    if (newItemCount > 0)
                     {
-                        _logger.LogInformation("Tooting {count} feed items since '{lastfeed}'", newItemCount, match.LastFeed);
+                        _logger.LogInformation("Tooting {count} feed items since '{lastfeed}'", newItemCount,
+                            match.LastFeed);
                         match.LastFeed = DateTime.Now;
-                    }
-                    else
-                    {
-                        _logger.LogDebug("Nothing new to do");
                     }
 
                     if (!_config.DisableToots) states.Upsert(match);
                 }
             }
+
             return unpublishedItems;
         }
 
@@ -117,6 +116,7 @@ namespace RssBot
             {
                 if (url.Contains(exclude, StringComparison.CurrentCultureIgnoreCase)) return true;
             }
+
             return false;
         }
 
@@ -130,6 +130,7 @@ namespace RssBot
                     return bot;
                 }
             }
+
             return null;
         }
     }
