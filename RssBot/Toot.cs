@@ -18,13 +18,11 @@ namespace RssBot
         private Config _config;
         private readonly ILogger<Toot> _logger;
 
-        public Toot(ILogger<Toot> logger)
+        public Toot(ILogger<Toot> logger, Config config, Secrets secrets)
         {
-            var secrets = File.ReadAllText("./secrets.json");
-            _secrets = JsonConvert.DeserializeObject<Secrets>(secrets)!;
-            var config = File.ReadAllText("./config.json");
-            _config = JsonConvert.DeserializeObject<Config>(config)!;
             _logger = logger;
+            _config = config;
+            _secrets = secrets;
         }
 
         private async Task<string?> UploadMedia(MastodonClient client, Stream fileStream, string filename, string description)
@@ -210,9 +208,7 @@ namespace RssBot
         private MastodonClient? GetServiceClient(string botId)
         {
             var bot = _secrets.Bots.FirstOrDefault(q => q.Id == botId && !q.Disabled);
-            if (bot == null) return null;
-
-            return new MastodonClient(_secrets.Instance, bot.Secret);
+            return bot == null ? null : new MastodonClient(_secrets.Instance, bot.Secret);
         }
     }
 }

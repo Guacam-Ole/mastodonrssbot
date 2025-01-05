@@ -2,6 +2,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using RssBot;
 
 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
@@ -27,11 +28,13 @@ services.AddLogging(logging =>
 services.AddScoped<Rss>();
 services.AddScoped<Toot>();
 services.AddScoped<BotWork>();
+services.AddSingleton<Config>(JsonConvert.DeserializeObject<Config>(File.ReadAllText("./config.json")));
+services.AddSingleton<Secrets>(JsonConvert.DeserializeObject<Secrets>(File.ReadAllText("./secrets.json")));
 
 var provider = services.BuildServiceProvider();
 var botwork = provider.GetRequiredService<BotWork>();
 
-int retries = maxTries;
+var retries = maxTries;
 while (true)
 {
     try
