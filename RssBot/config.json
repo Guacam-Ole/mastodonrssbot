@@ -36,6 +36,7 @@
         },
         {
           "id": "Sendungen.hamburg",
+          "enabled": false,
           "urlfilter": "/fernsehen/sendungen/",
           "urlexclude": "hamburg_journal podcast topvideos",
           "typefilter": "Video",

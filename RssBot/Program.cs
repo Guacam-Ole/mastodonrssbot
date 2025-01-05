@@ -32,7 +32,7 @@ services.AddSingleton<Config>(JsonConvert.DeserializeObject<Config>(File.ReadAll
 services.AddSingleton<Secrets>(JsonConvert.DeserializeObject<Secrets>(File.ReadAllText("./secrets.json")));
 
 var provider = services.BuildServiceProvider();
-var botwork = provider.GetRequiredService<BotWork>();
+var botWork = provider.GetRequiredService<BotWork>();
 
 var retries = maxTries;
 while (true)
@@ -40,7 +40,7 @@ while (true)
     try
     {
         Thread.Sleep(1000*60*5);
-        await botwork.RetrieveAndSendToots();
+        await botWork.RetrieveAndSendToots();
         retries = maxTries;
     }
     catch (Exception e)
