@@ -39,13 +39,16 @@ namespace RssBot
                 if (match == null)
                 {
                     _logger.LogInformation(
-                        "First start; Mark all news as already sent. Have to wait for new items in Feed for see results");
+                        "First start; Mark all but one news as already sent. Have to wait for new items in Feed for see results");
                     // first start, mark all as already sent
                     match = new State { Id = feedConfig.Url, LastFeed = DateTime.Now };
 
+                    var isFirst = true;
                     foreach (var item in feed.Items)
                     {
                         var id = item.GetIdentifier();
+                        if (!isFirst) continue;
+                        isFirst = false;
                         if (id != null) match.PostedItems.Add(new PostedItem { Id = id, ReadDate = DateTime.Now });
                     }
                 }

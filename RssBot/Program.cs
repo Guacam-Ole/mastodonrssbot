@@ -17,7 +17,7 @@ services.AddLogging(logging =>
     logging.ClearProviders();
     logging.AddConsole();
     logging.SetMinimumLevel(LogLevel.Debug);
-    var logFile = "rssmastodon.log";
+    const string logFile = "rssmastodon.log";
     logging.AddFile(logFile, conf =>
     {
         conf.Append = true;
@@ -39,7 +39,6 @@ while (true)
 {
     try
     {
-        Thread.Sleep(1000*60*5);
         await botWork.RetrieveAndSendToots();
         retries = maxTries;
     }
@@ -48,5 +47,9 @@ while (true)
         retries--;
         Console.WriteLine($"'{retries}' retries left: {e.Message}");
         if (retries == 0) return;
+    }
+    finally
+    {
+        Thread.Sleep(1000 * 60 * 5);
     }
 }
