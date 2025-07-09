@@ -5,8 +5,6 @@ VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RssBot", "RssBot\RssBot.csproj", "{B2F433C4-D3E7-4D95-A89A-D7B8377D7195}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mastonet", "mastonetfork\Mastonet\Mastonet.csproj", "{846B9FB7-7721-46B7-ABCA-94399B7D4105}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
