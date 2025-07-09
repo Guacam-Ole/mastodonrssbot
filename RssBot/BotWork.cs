@@ -20,6 +20,10 @@ namespace RssBot
             var newFeedItems = await _rss.ReadFeed();
             foreach (var botItems in newFeedItems)
             {
+                if (botItems.Value.Count > 0)
+                {
+                    _logger.LogDebug("Sending {count} new toots for '{bot}'",botItems.Value.Count, botItems.Key.Id);
+                }
                 foreach (var item in botItems.Value)
                 {
                     try

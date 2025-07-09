@@ -10,6 +10,5 @@
     {
         public string Id { get; set; }
         public string Secret { get; set; }
-        public bool Disabled { get; set; } = false;
     }
 }
