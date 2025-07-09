@@ -43,7 +43,7 @@ namespace RssBot
 
         public async Task<Status?> SendToot(BotConfig botConfig, RssItem rssItem)
         {
-            if (botConfig.TypeFilter != null)
+            if (botConfig.TypeFilter != null && rssItem.ItemType != null)
             {
                 var typeFilters = botConfig.TypeFilter.Split(" ");
                 if (!typeFilters.Any(q => q.Contains(rssItem.ItemType ?? "wrong")))
