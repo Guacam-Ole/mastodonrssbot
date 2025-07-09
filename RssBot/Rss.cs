@@ -47,8 +47,12 @@ namespace RssBot
                     foreach (var item in feed.Items)
                     {
                         var id = item.GetIdentifier();
-                        if (!isFirst) continue;
-                        isFirst = false;
+                        if (isFirst)
+                        {
+                            isFirst = false;
+                            continue;
+                        }
+                        
                         if (id != null) match.PostedItems.Add(new PostedItem { Id = id, ReadDate = DateTime.Now });
                     }
                 }
